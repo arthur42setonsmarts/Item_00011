@@ -8,15 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useActivitiesStore } from "@/lib/activities-store"
 import { usePlantStore } from "@/lib/store"
+// Import the new DatePicker component
+import { DatePickerNew } from "@/components/date-picker-new"
 
+// Modified schema to make date optional initially
 const formSchema = z.object({
   type: z.string({
     required_error: "Please select an activity type.",
@@ -24,9 +22,15 @@ const formSchema = z.object({
   plant: z.string({
     required_error: "Please select a plant.",
   }),
-  date: z.date({
-    required_error: "Please select a date.",
-  }),
+  date: z
+    .date({
+      required_error: "Please select a date.",
+    })
+    .optional()
+    .refine((date) => date !== undefined, {
+      message: "Please select a date.",
+      path: ["date"],
+    }),
   notes: z.string().optional(),
 })
 
@@ -72,7 +76,9 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
         }
       : {
           notes: "",
+          // Don't set a default date to avoid validation on initial render
         },
+    mode: "onSubmit", // Only validate on submit
   })
 
   useEffect(() => {
@@ -95,30 +101,42 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
   }, [isEditing, activity, form, getActivity])
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    // Make sure we have a date
+    if (!values.date) {
+      form.setError("date", {
+        type: "manual",
+        message: "Please select a date.",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     // Create the activity data object
     const activityData: ActivityData = {
       id: activity?.id,
-      ...values,
-      // Ensure date is a Date object
+      type: values.type,
+      plant: values.plant,
       date: ensureDate(values.date),
+      notes: values.notes,
     }
 
     if (isEditing && activity?.id) {
       // Update existing activity
       updateActivity(activity.id, {
-        ...values,
-        // Ensure date is a Date object
+        type: values.type,
+        plant: values.plant,
         date: ensureDate(values.date),
+        notes: values.notes,
       })
       console.log("Updating activity:", activityData)
     } else {
       // Add new activity
       addActivity({
-        ...values,
-        // Ensure date is a Date object
+        type: values.type,
+        plant: values.plant,
         date: ensureDate(values.date),
+        notes: values.notes,
       })
       console.log("Creating activity:", activityData)
     }
@@ -213,22 +231,19 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
+                <FormControl>
+                  <DatePickerNew
+                    date={field.value}
+                    onSelect={(date) => {
+                      field.onChange(date)
+                      // Clear any errors when a date is selected
+                      if (date) {
+                        form.clearErrors("date")
+                      }
+                    }}
+                    placeholder="Pick a date"
+                  />
+                </FormControl>
                 <FormDescription>When you performed this activity.</FormDescription>
                 <FormMessage />
               </FormItem>

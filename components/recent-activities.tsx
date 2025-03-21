@@ -90,7 +90,12 @@ export function RecentActivities() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activities.length > 0 ? (
+            {allActivities.filter((activity) => new Date(activity.date) < today).length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-24">
+                <p className="text-muted-foreground">No recent activities recorded</p>
+                <p className="text-sm text-muted-foreground">Complete activities to see them here</p>
+              </div>
+            ) : activities.length > 0 ? (
               activities.map((activity) => {
                 const plant = plants.find((p) => p.id === activity.plant)
                 const plantName = plant ? plant.name : "Unknown Plant"

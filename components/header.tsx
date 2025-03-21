@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Menu, Bell } from "lucide-react"
+import { Menu } from "lucide-react"
 import Link from "next/link"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState } from "react"
@@ -46,10 +46,6 @@ export default function Header() {
         <span className="text-lg">🌱 Garden Tracker</span>
       </Link>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Notifications</span>
-        </Button>
         <ModeToggle />
       </div>
     </header>

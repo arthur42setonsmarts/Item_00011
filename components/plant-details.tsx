@@ -5,9 +5,24 @@ import { Badge } from "@/components/ui/badge"
 import { Pencil, Trash2, Droplets, SproutIcon as Seedling, CropIcon as Harvest } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 // Import the store at the top of the file
 import { usePlantStore } from "@/lib/store"
+
+// Import the useToast hook and AlertDialog components at the top of the file
+import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useState } from "react"
 
 interface PlantDetailsProps {
   id: string
@@ -15,8 +30,18 @@ interface PlantDetailsProps {
 
 // Update the component to use the store
 export function PlantDetails({ id }: PlantDetailsProps) {
-  // Get plant data from the store
-  const plant = usePlantStore((state) => state.getPlant(id)) || {
+  const router = useRouter()
+  // Get plant data and deletePlant function from the store
+  const { getPlant, deletePlant } = usePlantStore((state) => ({
+    getPlant: state.getPlant,
+    deletePlant: state.deletePlant,
+  }))
+  // Add toast hook
+  const { toast } = useToast()
+  // Add state for delete confirmation dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+  const plant = getPlant(id) || {
     id,
     name: "Unknown Plant",
     variety: "",
@@ -27,6 +52,19 @@ export function PlantDetails({ id }: PlantDetailsProps) {
     wateringFrequency: "Unknown",
     sunExposure: "Unknown",
     soilType: "Unknown",
+  }
+
+  const handleDelete = () => {
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = () => {
+    deletePlant(id)
+    toast({
+      title: "Plant deleted",
+      description: "The plant has been successfully removed.",
+    })
+    router.push("/plants")
   }
 
   return (
@@ -43,7 +81,7 @@ export function PlantDetails({ id }: PlantDetailsProps) {
               Edit
             </Button>
           </Link>
-          <Button variant="outline" size="sm" className="text-destructive">
+          <Button variant="outline" size="sm" className="text-destructive" onClick={handleDelete}>
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
@@ -127,6 +165,23 @@ export function PlantDetails({ id }: PlantDetailsProps) {
           <p className="text-sm text-muted-foreground">{plant.notes}</p>
         </CardContent>
       </Card>
+      {/* Add the AlertDialog for delete confirmation */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {plant.name} and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

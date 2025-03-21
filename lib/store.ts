@@ -67,6 +67,7 @@ type PlantStore = {
   getPlant: (id: string) => Plant | undefined
   updatePlant: (id: string, data: Partial<Plant>) => void
   addPlant: (plant: Omit<Plant, "id" | "status">) => void
+  deletePlant: (id: string) => void
 }
 
 export const usePlantStore = create<PlantStore>()(
@@ -88,6 +89,10 @@ export const usePlantStore = create<PlantStore>()(
               status: "growing",
             },
           ],
+        })),
+      deletePlant: (id) =>
+        set((state) => ({
+          plants: state.plants.filter((plant) => plant.id !== id),
         })),
     }),
     {

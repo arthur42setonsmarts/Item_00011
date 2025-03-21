@@ -1,7 +1,5 @@
-import { ActivitiesCalendar } from "@/components/activities-calendar"
 import { ActivitiesTable } from "@/components/activities-table"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus } from "lucide-react"
 import Link from "next/link"
 
@@ -17,18 +15,7 @@ export default function ActivitiesPage() {
           </Button>
         </Link>
       </div>
-      <Tabs defaultValue="list">
-        <TabsList>
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-        </TabsList>
-        <TabsContent value="list" className="mt-4">
-          <ActivitiesTable />
-        </TabsContent>
-        <TabsContent value="calendar" className="mt-4">
-          <ActivitiesCalendar />
-        </TabsContent>
-      </Tabs>
+      <ActivitiesTable />
     </div>
   )
 }

@@ -9,15 +9,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 // Import the store at the top of the file
 import { usePlantStore } from "@/lib/store"
+// Import the new DatePicker component
+import { DatePickerNew } from "@/components/date-picker-new"
 
+// Modified schema to make plantedDate optional initially
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Plant name must be at least 2 characters.",
@@ -26,9 +24,15 @@ const formSchema = z.object({
   location: z.string({
     required_error: "Please select a garden location.",
   }),
-  plantedDate: z.date({
-    required_error: "Please select a planting date.",
-  }),
+  plantedDate: z
+    .date({
+      required_error: "Please select a planting date.",
+    })
+    .optional()
+    .refine((date) => date !== undefined, {
+      message: "Please select a planting date.",
+      path: ["plantedDate"],
+    }),
   notes: z.string().optional(),
 })
 
@@ -49,7 +53,9 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
       variety: "",
       location: "",
       notes: "",
+      // Don't set a default plantedDate to avoid validation on initial render
     },
+    mode: "onSubmit", // Only validate on submit
   })
 
   // Update the useEffect to load data from the store
@@ -76,6 +82,15 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
 
   // Update the onSubmit function to use the store
   function onSubmit(values: z.infer<typeof formSchema>) {
+    // Make sure we have a plantedDate
+    if (!values.plantedDate) {
+      form.setError("plantedDate", {
+        type: "manual",
+        message: "Please select a planting date.",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     if (isEditing && plantId) {
@@ -184,22 +199,19 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Planting Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
+                <FormControl>
+                  <DatePickerNew
+                    date={field.value}
+                    onSelect={(date) => {
+                      field.onChange(date)
+                      // Clear any errors when a date is selected
+                      if (date) {
+                        form.clearErrors("plantedDate")
+                      }
+                    }}
+                    placeholder="Pick a date"
+                  />
+                </FormControl>
                 <FormDescription>When you planted or will plant this plant.</FormDescription>
                 <FormMessage />
               </FormItem>

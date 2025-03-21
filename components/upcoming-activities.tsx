@@ -92,7 +92,12 @@ export function UpcomingActivities() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activities.length > 0 ? (
+            {activities.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-24">
+                <p className="text-muted-foreground">No upcoming activities scheduled</p>
+                <p className="text-sm text-muted-foreground">Add activities to see them here</p>
+              </div>
+            ) : activities.length > 0 ? (
               activities.map((activity) => {
                 const plant = plants.find((p) => p.id === activity.plant)
                 const plantName = plant ? plant.name : "Unknown Plant"

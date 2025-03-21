@@ -3,6 +3,8 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ActivityForm, type ActivityData } from "@/components/activity-form"
 import { useActivitiesStore } from "@/lib/activities-store"
+// Import the useToast hook at the top of the file
+import { useToast } from "@/hooks/use-toast"
 
 interface ActivityDialogProps {
   activity?: ActivityData
@@ -13,6 +15,8 @@ interface ActivityDialogProps {
 
 export function ActivityDialog({ activity, isOpen, onOpenChange, onSave }: ActivityDialogProps) {
   const { updateActivity, addActivity } = useActivitiesStore()
+  // Add the toast hook
+  const { toast } = useToast()
 
   // Ensure date is a Date object
   const ensureDate = (date: Date | string | undefined): Date => {
@@ -37,6 +41,12 @@ export function ActivityDialog({ activity, isOpen, onOpenChange, onSave }: Activ
         date: ensureDate(data.date),
         notes: data.notes,
       })
+
+      // Show success toast for update
+      toast({
+        title: "Activity updated",
+        description: "Your activity has been successfully updated.",
+      })
     } else if (data) {
       // Add new activity
       addActivity({
@@ -44,6 +54,12 @@ export function ActivityDialog({ activity, isOpen, onOpenChange, onSave }: Activ
         plant: data.plant,
         date: ensureDate(data.date),
         notes: data.notes,
+      })
+
+      // Show success toast for creation
+      toast({
+        title: "Activity added",
+        description: "Your new activity has been successfully added.",
       })
     }
 
