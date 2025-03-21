@@ -1,0 +1,83 @@
+/* Plant specific styles */
+.plant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.plant-card {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.plant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.plant-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background-color: hsl(var(--muted));
+}
+
+.plant-content {
+  padding: 1rem;
+}
+
+.plant-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.plant-variety {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.plant-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.plant-detail {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.plant-detail-label {
+  color: hsl(var(--muted-foreground));
+}
+
+.plant-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Plant status badges */
+.status-growing {
+  background-color: hsl(142, 71%, 45%, 0.2);
+  color: hsl(142, 71%, 45%);
+}
+
+.status-harvested {
+  background-color: hsl(43, 96%, 56%, 0.2);
+  color: hsl(43, 96%, 56%);
+}
+
+.status-dormant {
+  background-color: hsl(215, 16%, 47%, 0.2);
+  color: hsl(215, 16%, 47%);
+}
+

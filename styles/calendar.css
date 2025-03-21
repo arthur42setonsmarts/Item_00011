@@ -1,0 +1,70 @@
+/* Calendar specific styles */
+.calendar-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.calendar-day {
+  min-height: 100px;
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem;
+  position: relative;
+}
+
+.calendar-day-header {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-align: right;
+}
+
+.calendar-day-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calendar-event {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.calendar-event-watering {
+  background-color: hsl(217, 91%, 60%, 0.2);
+  color: hsl(217, 91%, 60%);
+}
+
+.calendar-event-planting {
+  background-color: hsl(142, 71%, 45%, 0.2);
+  color: hsl(142, 71%, 45%);
+}
+
+.calendar-event-harvesting {
+  background-color: hsl(43, 96%, 56%, 0.2);
+  color: hsl(43, 96%, 56%);
+}
+
+.calendar-event-pruning {
+  background-color: hsl(271, 91%, 65%, 0.2);
+  color: hsl(271, 91%, 65%);
+}
+
+.calendar-event-fertilizing {
+  background-color: hsl(168, 76%, 42%, 0.2);
+  color: hsl(168, 76%, 42%);
+}
+
+.calendar-today {
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+.calendar-outside-month {
+  background-color: hsl(var(--muted) / 0.5);
+  color: hsl(var(--muted-foreground));
+}
+
