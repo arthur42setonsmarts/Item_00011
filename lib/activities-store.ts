@@ -18,6 +18,8 @@ type ActivitiesStore = {
   getActivity: (id: string) => Activity | undefined
   updateActivity: (id: string, data: Partial<Activity>) => void
   addActivity: (activity: Omit<Activity, "id">) => void
+  addActivityWithId: (activity: Activity) => void
+  addActivityAtIndex: (activity: Activity, index: number) => void
   deleteActivity: (id: string) => void
 }
 
@@ -109,6 +111,29 @@ export const useActivitiesStore = create<ActivitiesStore>()(
             },
           ],
         })),
+      addActivityWithId: (activity) =>
+        set((state) => ({
+          activities: [
+            ...state.activities,
+            {
+              ...activity,
+              // Ensure date is a Date object
+              date: ensureDate(activity.date),
+            },
+          ],
+        })),
+      addActivityAtIndex: (activity, index) =>
+        set((state) => {
+          const newActivities = [...state.activities]
+          // Ensure index is within bounds
+          const safeIndex = Math.min(Math.max(0, index), newActivities.length)
+          newActivities.splice(safeIndex, 0, {
+            ...activity,
+            // Ensure date is a Date object
+            date: ensureDate(activity.date),
+          })
+          return { activities: newActivities }
+        }),
       deleteActivity: (id) =>
         set((state) => ({
           activities: state.activities.filter((activity) => activity.id !== id),

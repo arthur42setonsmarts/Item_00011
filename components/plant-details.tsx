@@ -31,6 +31,7 @@ interface PlantDetailsProps {
 // Update the component to use the store
 export function PlantDetails({ id }: PlantDetailsProps) {
   const router = useRouter()
+
   // Get plant data and deletePlant function from the store
   const { getPlant, deletePlant } = usePlantStore((state) => ({
     getPlant: state.getPlant,
@@ -41,17 +42,23 @@ export function PlantDetails({ id }: PlantDetailsProps) {
   // Add state for delete confirmation dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  const plant = getPlant(id) || {
-    id,
-    name: "Unknown Plant",
-    variety: "",
-    location: "Unknown",
-    plantedDate: new Date(),
-    status: "growing" as const,
-    notes: "No information available.",
-    wateringFrequency: "Unknown",
-    sunExposure: "Unknown",
-    soilType: "Unknown",
+  // Ensure we have a valid plant
+  const plant = id === "add" ? null : getPlant(id)
+
+  if (id === "add") {
+    return null
+  }
+
+  if (!plant) {
+    return (
+      <div className="flex flex-col items-center justify-center h-40">
+        <h2 className="text-xl font-bold">Plant Not Found</h2>
+        <p className="text-muted-foreground">The plant you're looking for doesn't exist.</p>
+        <Button className="mt-4" onClick={() => router.push("/plants")}>
+          Return to Plants
+        </Button>
+      </div>
+    )
   }
 
   const handleDelete = () => {
@@ -122,15 +129,15 @@ export function PlantDetails({ id }: PlantDetailsProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Watering</span>
-                <span>{plant.wateringFrequency}</span>
+                <span>{plant.wateringFrequency || "Not specified"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Sun Exposure</span>
-                <span>{plant.sunExposure}</span>
+                <span>{plant.sunExposure || "Not specified"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Soil Type</span>
-                <span>{plant.soilType}</span>
+                <span>{plant.soilType || "Not specified"}</span>
               </div>
             </div>
           </CardContent>

@@ -11,11 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 // Import the store at the top of the file
-import { usePlantStore } from "@/lib/store"
+import { usePlantStore, type Plant } from "@/lib/store"
 // Import the new DatePicker component
 import { DatePickerNew } from "@/components/date-picker-new"
+// Import toast
+import { useToast } from "@/hooks/use-toast"
+import { Undo2 } from "lucide-react"
 
-// Modified schema to make plantedDate optional initially
+// Modified schema to make plantedDate optional when editing
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Plant name must be at least 2 characters.",
@@ -24,15 +27,7 @@ const formSchema = z.object({
   location: z.string({
     required_error: "Please select a garden location.",
   }),
-  plantedDate: z
-    .date({
-      required_error: "Please select a planting date.",
-    })
-    .optional()
-    .refine((date) => date !== undefined, {
-      message: "Please select a planting date.",
-      path: ["plantedDate"],
-    }),
+  plantedDate: z.date().optional(),
   notes: z.string().optional(),
 })
 
@@ -45,6 +40,8 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(isEditing)
+  const [previousPlant, setPreviousPlant] = useState<Plant | null>(null)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,11 +64,14 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
       const plant = usePlantStore.getState().getPlant(plantId)
 
       if (plant) {
+        // Store the original plant for undo functionality
+        setPreviousPlant({ ...plant })
+
         form.reset({
           name: plant.name,
           variety: plant.variety,
           location: plant.location,
-          plantedDate: plant.plantedDate,
+          plantedDate: plant.plantedDate instanceof Date ? plant.plantedDate : new Date(plant.plantedDate),
           notes: plant.notes || "",
         })
       }
@@ -80,10 +80,23 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
     }
   }, [isEditing, plantId, form])
 
+  // Handle undo functionality
+  const handleUndo = () => {
+    if (previousPlant && plantId) {
+      // Restore the previous plant state
+      usePlantStore.getState().updatePlant(plantId, previousPlant)
+
+      toast({
+        title: "Changes reverted",
+        description: "Your plant has been restored to its previous state.",
+      })
+    }
+  }
+
   // Update the onSubmit function to use the store
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Make sure we have a plantedDate
-    if (!values.plantedDate) {
+    // When editing, don't require plantedDate if we're just updating other fields
+    if (!isEditing && !values.plantedDate) {
       form.setError("plantedDate", {
         type: "manual",
         message: "Please select a planting date.",
@@ -94,14 +107,44 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
     setIsSubmitting(true)
 
     if (isEditing && plantId) {
+      // For editing, only include plantedDate in the update if it was changed
+      const updateData: Partial<Plant> = {
+        name: values.name,
+        variety: values.variety,
+        location: values.location,
+        notes: values.notes,
+      }
+
+      // Only include plantedDate if it exists
+      if (values.plantedDate) {
+        updateData.plantedDate = values.plantedDate instanceof Date ? values.plantedDate : new Date(values.plantedDate)
+      }
+
       // Update existing plant
-      usePlantStore.getState().updatePlant(plantId, {
-        ...values,
-        // Ensure plantedDate is a Date object
-        plantedDate: values.plantedDate instanceof Date ? values.plantedDate : new Date(values.plantedDate),
-      })
+      usePlantStore.getState().updatePlant(plantId, updateData)
       console.log("Updating plant:", values)
+
+      // Show toast with undo button
+      toast({
+        title: "Plant updated",
+        description: "Your plant has been successfully updated.",
+        action: previousPlant ? (
+          <Button variant="outline" size="sm" onClick={handleUndo} className="gap-1">
+            <Undo2 className="h-3.5 w-3.5" />
+            Undo
+          </Button>
+        ) : undefined,
+      })
     } else {
+      // For new plants, require a plantedDate
+      if (!values.plantedDate) {
+        form.setError("plantedDate", {
+          type: "manual",
+          message: "Please select a planting date.",
+        })
+        return
+      }
+
       // Add new plant
       usePlantStore.getState().addPlant({
         ...values,
@@ -109,6 +152,12 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
         plantedDate: values.plantedDate instanceof Date ? values.plantedDate : new Date(values.plantedDate),
       })
       console.log("Creating plant:", values)
+
+      // Show success toast
+      toast({
+        title: "Plant added",
+        description: "Your new plant has been successfully added.",
+      })
     }
 
     setTimeout(() => {
@@ -147,7 +196,15 @@ export function PlantForm({ plantId, isEditing = false }: PlantFormProps) {
               <FormItem>
                 <FormLabel>Plant Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Tomato" {...field} />
+                  <Input
+                    placeholder="Tomato"
+                    {...field}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault()
+                      }
+                    }}
+                  />
                 </FormControl>
                 <FormDescription>The common name of your plant.</FormDescription>
                 <FormMessage />

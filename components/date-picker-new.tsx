@@ -25,6 +25,22 @@ export function DatePickerNew({
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
+  // More robust check for valid date
+  const isValidDate = (value: any): boolean => {
+    if (!value) return false
+    if (value instanceof Date) return !isNaN(value.getTime())
+
+    try {
+      const date = new Date(value)
+      return !isNaN(date.getTime())
+    } catch (e) {
+      return false
+    }
+  }
+
+  // Use the function in the component
+  const dateIsValid = isValidDate(date)
+
   const handleSelect = (date: Date | undefined) => {
     onSelect(date)
     setOpen(false)
@@ -35,19 +51,23 @@ export function DatePickerNew({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground", className)}
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !dateIsValid && "text-muted-foreground",
+            className,
+          )}
           disabled={disabled}
           onClick={() => setOpen(true)}
           type="button" // Important: prevent form submission
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>{placeholder}</span>}
+          {dateIsValid ? format(new Date(date as Date), "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <CalendarNew
           mode="single"
-          selected={date}
+          selected={dateIsValid ? date : undefined}
           onSelect={handleSelect}
           initialFocus
           disabled={(date) => {

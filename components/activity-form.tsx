@@ -9,12 +9,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
-import { useActivitiesStore } from "@/lib/activities-store"
+import { useActivitiesStore, type Activity } from "@/lib/activities-store"
 import { usePlantStore } from "@/lib/store"
-// Import the new DatePicker component
 import { DatePickerNew } from "@/components/date-picker-new"
+import { useToast } from "@/hooks/use-toast"
+import { Undo2 } from "lucide-react"
 
-// Modified schema to make date optional initially
+// Simplified schema with more lenient date handling
 const formSchema = z.object({
   type: z.string({
     required_error: "Please select an activity type.",
@@ -22,15 +23,8 @@ const formSchema = z.object({
   plant: z.string({
     required_error: "Please select a plant.",
   }),
-  date: z
-    .date({
-      required_error: "Please select a date.",
-    })
-    .optional()
-    .refine((date) => date !== undefined, {
-      message: "Please select a date.",
-      path: ["date"],
-    }),
+  // Make date optional in the schema, we'll handle validation manually
+  date: z.any().optional(),
   notes: z.string().optional(),
 })
 
@@ -48,61 +42,110 @@ interface ActivityFormProps {
   onSave?: (data: ActivityData) => void
   onCancel?: () => void
   isDialog?: boolean
+  onUndo?: () => void
 }
 
-export function ActivityForm({ activity, isEditing = false, onSave, onCancel, isDialog = false }: ActivityFormProps) {
+export function ActivityForm({
+  activity,
+  isEditing = false,
+  onSave,
+  onCancel,
+  isDialog = false,
+  onUndo,
+}: ActivityFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoading, setIsLoading] = useState(isEditing && !activity)
+  const [isLoading, setIsLoading] = useState(false)
   const { updateActivity, addActivity, getActivity } = useActivitiesStore()
+  const { toast } = useToast()
+  const [previousActivity, setPreviousActivity] = useState<Activity | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
 
   // Get plants from the store
   const plants = usePlantStore((state) => state.plants)
 
-  // Ensure activity.date is a Date object
-  const ensureDate = (date: Date | string | undefined): Date => {
-    if (!date) return new Date()
-    return date instanceof Date ? date : new Date(date)
+  // Safe function to convert any date value to a proper Date object
+  const safeDate = (value: any): Date | undefined => {
+    if (!value) return undefined
+    if (value instanceof Date) return isNaN(value.getTime()) ? undefined : value
+
+    try {
+      const date = new Date(value)
+      return isNaN(date.getTime()) ? undefined : date
+    } catch (e) {
+      return undefined
+    }
   }
 
+  // Initialize the form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: activity
-      ? {
-          type: activity.type,
-          plant: activity.plant,
-          date: ensureDate(activity.date),
-          notes: activity.notes || "",
-        }
-      : {
-          notes: "",
-          // Don't set a default date to avoid validation on initial render
-        },
-    mode: "onSubmit", // Only validate on submit
+    defaultValues: {
+      type: activity?.type || "",
+      plant: activity?.plant || "",
+      notes: activity?.notes || "",
+      // Don't set date in defaultValues, we'll handle it separately
+    },
+    mode: "onSubmit",
   })
 
+  // Set up the date separately from the form
   useEffect(() => {
-    if (isEditing && activity?.id && !activity.date) {
+    if (activity?.date) {
+      const date = safeDate(activity.date)
+      setSelectedDate(date)
+    }
+  }, [activity])
+
+  // Load activity data when editing
+  useEffect(() => {
+    if (isEditing && activity?.id) {
       setIsLoading(true)
+
       // Get activity data from the store
       const activityData = getActivity(activity.id)
 
       if (activityData) {
+        // Store the original activity for undo functionality
+        setPreviousActivity({ ...activityData })
+
+        // Set form values
         form.reset({
           type: activityData.type,
           plant: activityData.plant,
-          date: ensureDate(activityData.date),
           notes: activityData.notes || "",
         })
+
+        // Set date separately
+        const date = safeDate(activityData.date)
+        setSelectedDate(date)
       }
 
       setIsLoading(false)
     }
   }, [isEditing, activity, form, getActivity])
 
+  // Handle undo functionality
+  const handleUndo = () => {
+    if (previousActivity && activity?.id) {
+      // Restore the previous activity state
+      updateActivity(activity.id, previousActivity)
+
+      toast({
+        title: "Changes reverted",
+        description: "Your activity has been restored to its previous state.",
+      })
+
+      if (onUndo) {
+        onUndo()
+      }
+    }
+  }
+
+  // Handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Make sure we have a date
-    if (!values.date) {
+    // Validate date manually
+    if (!selectedDate) {
       form.setError("date", {
         type: "manual",
         message: "Please select a date.",
@@ -112,12 +155,12 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
 
     setIsSubmitting(true)
 
-    // Create the activity data object
+    // Create the activity data object with the separately managed date
     const activityData: ActivityData = {
       id: activity?.id,
       type: values.type,
       plant: values.plant,
-      date: ensureDate(values.date),
+      date: selectedDate,
       notes: values.notes,
     }
 
@@ -126,19 +169,39 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
       updateActivity(activity.id, {
         type: values.type,
         plant: values.plant,
-        date: ensureDate(values.date),
+        date: selectedDate,
         notes: values.notes,
       })
-      console.log("Updating activity:", activityData)
+
+      // Show toast with undo button if not in dialog mode
+      if (!isDialog) {
+        toast({
+          title: "Activity updated",
+          description: "Your activity has been successfully updated.",
+          action: previousActivity ? (
+            <Button variant="outline" size="sm" onClick={handleUndo} className="gap-1">
+              <Undo2 className="h-3.5 w-3.5" />
+              Undo
+            </Button>
+          ) : undefined,
+        })
+      }
     } else {
       // Add new activity
       addActivity({
         type: values.type,
         plant: values.plant,
-        date: ensureDate(values.date),
+        date: selectedDate,
         notes: values.notes,
       })
-      console.log("Creating activity:", activityData)
+
+      // Show success toast if not in dialog mode
+      if (!isDialog) {
+        toast({
+          title: "Activity added",
+          description: "Your new activity has been successfully added.",
+        })
+      }
     }
 
     setTimeout(() => {
@@ -228,14 +291,14 @@ export function ActivityForm({ activity, isEditing = false, onSave, onCancel, is
           <FormField
             control={form.control}
             name="date"
-            render={({ field }) => (
+            render={() => (
               <FormItem className="flex flex-col">
                 <FormLabel>Date</FormLabel>
                 <FormControl>
                   <DatePickerNew
-                    date={field.value}
+                    date={selectedDate}
                     onSelect={(date) => {
-                      field.onChange(date)
+                      setSelectedDate(date)
                       // Clear any errors when a date is selected
                       if (date) {
                         form.clearErrors("date")

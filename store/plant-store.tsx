@@ -67,8 +67,6 @@ type PlantStore = {
   getPlant: (id: string) => Plant | undefined
   updatePlant: (id: string, data: Partial<Plant>) => void
   addPlant: (plant: Omit<Plant, "id" | "status">) => void
-  addPlantWithId: (plant: Plant) => void
-  addPlantAtIndex: (plant: Plant, index: number) => void
   deletePlant: (id: string) => void
 }
 
@@ -96,18 +94,6 @@ export const usePlantStore = create<PlantStore>()(
             },
           ],
         })),
-      addPlantWithId: (plant) =>
-        set((state) => ({
-          plants: [...state.plants, { ...plant }],
-        })),
-      addPlantAtIndex: (plant, index) =>
-        set((state) => {
-          const newPlants = [...state.plants]
-          // Ensure index is within bounds
-          const safeIndex = Math.min(Math.max(0, index), newPlants.length)
-          newPlants.splice(safeIndex, 0, plant)
-          return { plants: newPlants }
-        }),
       deletePlant: (id) =>
         set((state) => ({
           plants: state.plants.filter((plant) => plant.id !== id),

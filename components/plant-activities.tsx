@@ -9,6 +9,11 @@ interface PlantActivitiesProps {
 }
 
 export function PlantActivities({ plantId }: PlantActivitiesProps) {
+  // Special case for "add" ID
+  if (plantId === "add") {
+    return null
+  }
+
   // In a real app, you would fetch this data from an API
   const activities = [
     {
