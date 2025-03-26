@@ -203,12 +203,15 @@ export function ActivitiesTable() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-8"
             />
-            {searchTerm && (
+            {(searchTerm || filterType !== "all") && (
               <button
                 type="button"
-                onClick={() => setSearchTerm("")}
+                onClick={() => {
+                  setSearchTerm("")
+                  setFilterType("all")
+                }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Clear search"
+                aria-label="Clear search and filters"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -333,11 +336,14 @@ export function ActivitiesTable() {
               <p>No activities found matching your search.</p>
               <p className="text-sm">Try adjusting your search term or filter.</p>
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" onClick={() => setSearchTerm("")}>
-                  Clear Search
-                </Button>
-                <Button variant="outline" onClick={() => setFilterType("all")}>
-                  Clear Filter
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("")
+                    setFilterType("all")
+                  }}
+                >
+                  Clear All Filters
                 </Button>
               </div>
             </div>

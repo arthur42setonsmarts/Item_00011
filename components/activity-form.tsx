@@ -15,7 +15,7 @@ import { DatePickerNew } from "@/components/date-picker-new"
 import { useToast } from "@/hooks/use-toast"
 import { Undo2 } from "lucide-react"
 
-// Simplified schema with more lenient date handling
+// Update the form schema to make notes required
 const formSchema = z.object({
   type: z.string({
     required_error: "Please select an activity type.",
@@ -25,7 +25,13 @@ const formSchema = z.object({
   }),
   // Make date optional in the schema, we'll handle validation manually
   date: z.any().optional(),
-  notes: z.string().optional(),
+  notes: z
+    .string({
+      required_error: "Please provide activity notes.",
+    })
+    .min(1, {
+      message: "Activity notes cannot be empty.",
+    }),
 })
 
 export interface ActivityData {
@@ -187,16 +193,17 @@ export function ActivityForm({
         })
       }
     } else {
-      // Add new activity
-      addActivity({
-        type: values.type,
-        plant: values.plant,
-        date: selectedDate,
-        notes: values.notes,
-      })
-
-      // Show success toast if not in dialog mode
+      // Add new activity - but only if not in dialog mode
+      // If in dialog mode, let the dialog handle adding the activity
       if (!isDialog) {
+        addActivity({
+          type: values.type,
+          plant: values.plant,
+          date: selectedDate,
+          notes: values.notes,
+        })
+
+        // Show success toast if not in dialog mode
         toast({
           title: "Activity added",
           description: "Your new activity has been successfully added.",
@@ -318,11 +325,13 @@ export function ActivityForm({
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>
+                Notes <span className="text-destructive">*</span>
+              </FormLabel>
               <FormControl>
-                <Textarea placeholder="Add any notes about this activity..." className="min-h-[100px]" {...field} />
+                <Textarea placeholder="Add notes about this activity..." className="min-h-[100px]" {...field} />
               </FormControl>
-              <FormDescription>Any additional information about this activity.</FormDescription>
+              <FormDescription>Provide details about this activity (required).</FormDescription>
               <FormMessage />
             </FormItem>
           )}

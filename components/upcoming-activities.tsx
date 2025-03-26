@@ -3,12 +3,14 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Droplets, SproutIcon as Seedling, CropIcon as Harvest, Flower2 } from "lucide-react"
+import { Droplets, SproutIcon as Seedling, CropIcon as Harvest, Flower2, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ActivityDialog } from "@/components/activity-dialog"
 import type { ActivityData } from "@/components/activity-form"
 import { useActivitiesStore } from "@/lib/activities-store"
 import { usePlantStore } from "@/lib/store"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export function UpcomingActivities() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -16,6 +18,7 @@ export function UpcomingActivities() {
 
   const allActivities = useActivitiesStore((state) => state.activities)
   const plants = usePlantStore((state) => state.plants)
+  const addActivity = useActivitiesStore((state) => state.addActivity)
 
   // Filter for upcoming activities (today and future)
   const today = new Date()
@@ -78,26 +81,58 @@ export function UpcomingActivities() {
   }
 
   const handleSaveActivity = (data: ActivityData) => {
-    console.log("Saving activity:", data)
-    // The actual saving is handled in the ActivityDialog component
+    // If it's a new activity, add it
+    if (!data.id) {
+      addActivity({
+        type: data.type,
+        plant: data.plant,
+        date: data.date,
+        notes: data.notes || "",
+      })
+    }
+    // If it's an existing activity, the dialog will handle the update
     setIsDialogOpen(false)
   }
 
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>Upcoming Activities</CardTitle>
-          <CardDescription>Your scheduled gardening tasks for the next few days</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Upcoming Activities</CardTitle>
+            <CardDescription>Your scheduled gardening tasks for the next few days</CardDescription>
+          </div>
+          {plants.length > 0 && (
+            <Link href="/activities/add">
+              <Button size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </Link>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {activities.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-24">
-                <p className="text-muted-foreground">No upcoming activities scheduled</p>
-                <p className="text-sm text-muted-foreground">Add activities to see them here</p>
+                {plants.length > 0 ? (
+                  <>
+                    <p className="text-muted-foreground">No upcoming activities scheduled</p>
+                    <p className="text-sm text-muted-foreground">Add activities to see them here</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground">Add plants to get started</p>
+                    <Link href="/plants/add" className="mt-2">
+                      <Button size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Your First Plant
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
-            ) : activities.length > 0 ? (
+            ) : (
               activities.map((activity) => {
                 const plant = plants.find((p) => p.id === activity.plant)
                 const plantName = plant ? plant.name : "Unknown Plant"
@@ -137,10 +172,6 @@ export function UpcomingActivities() {
                   </div>
                 )
               })
-            ) : (
-              <div className="flex items-center justify-center h-24">
-                <p className="text-muted-foreground">No upcoming activities</p>
-              </div>
             )}
           </div>
         </CardContent>

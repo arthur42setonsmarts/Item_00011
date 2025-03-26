@@ -165,7 +165,7 @@ export function PlantsTable() {
           </div>
         </div>
       ) : filteredPlants.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {filteredPlants.map((plant) => (
             <Card key={plant.id} className="overflow-hidden">
               <CardContent className="p-0">
@@ -230,17 +230,17 @@ export function PlantsTable() {
                   </div>
                 </div>
 
-                <div className="border-t p-2 flex justify-between">
+                <div className="border-t p-2 flex justify-end gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2"
+                    className="h-8 w-8 p-0"
                     onClick={() => router.push(`/plants/${plant.id}`)}
                   >
                     <Eye className="h-3.5 w-3.5" />
                     <span className="sr-only">View</span>
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 px-2" asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
                     <Link href={`/plants/${plant.id}/edit`}>
                       <Pencil className="h-3.5 w-3.5" />
                       <span className="sr-only">Edit</span>
@@ -249,7 +249,7 @@ export function PlantsTable() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-destructive"
+                    className="h-8 w-8 p-0 text-destructive"
                     onClick={() => handleDeletePlant(plant.id)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />

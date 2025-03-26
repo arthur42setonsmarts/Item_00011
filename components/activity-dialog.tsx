@@ -44,7 +44,20 @@ export function ActivityDialog({ activity, isOpen, onOpenChange, onSave }: Activ
       }
     : undefined
 
+  // Update the handleSave function to ensure notes is required
   const handleSave = (data: ActivityData) => {
+    // Validate that notes is provided
+    if (!data.notes || data.notes.trim() === "") {
+      toast({
+        title: "Missing information",
+        description: "Activity notes are required.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Only save the activity if we're not in a dialog or if we're editing
+    // This prevents double-saving when the ActivityForm is used inside a dialog
     if (activity?.id) {
       // Store the previous state for undo
       const originalActivity = getActivity(activity.id)
@@ -72,19 +85,22 @@ export function ActivityDialog({ activity, isOpen, onOpenChange, onSave }: Activ
         ) : undefined,
       })
     } else if (data) {
-      // Add new activity
-      addActivity({
-        type: data.type,
-        plant: data.plant,
-        date: data.date,
-        notes: data.notes,
-      })
+      // Add new activity - but only if we're not in a dialog
+      // The ActivityForm will handle adding the activity itself
+      if (!onSave) {
+        addActivity({
+          type: data.type,
+          plant: data.plant,
+          date: data.date,
+          notes: data.notes,
+        })
 
-      // Show success toast for creation
-      toast({
-        title: "Activity added",
-        description: "Your new activity has been successfully added.",
-      })
+        // Show success toast for creation
+        toast({
+          title: "Activity added",
+          description: "Your new activity has been successfully added.",
+        })
+      }
     }
 
     if (onSave) {

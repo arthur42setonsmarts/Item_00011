@@ -63,28 +63,40 @@ export default function PlantPage({ params }: { params: { id: string } }) {
 
   // Handle loading state
   useEffect(() => {
+    let isMounted = true // Add a flag to track component mount status
+
     setIsLoading(true) // Ensure loading is set to true at the start
 
-    if (params.id !== "add") {
-      const fetchedPlant = getPlant(params.id)
+    const fetchPlant = async () => {
+      if (params.id !== "add") {
+        const fetchedPlant = getPlant(params.id)
 
-      if (!fetchedPlant) {
-        toast({
-          title: "Plant not found",
-          description: "The plant you're looking for doesn't exist.",
-          variant: "destructive",
-        })
+        if (!fetchedPlant) {
+          toast({
+            title: "Plant not found",
+            description: "The plant you're looking for doesn't exist.",
+            variant: "destructive",
+          })
 
-        // Redirect after a short delay
-        setTimeout(() => {
-          router.push("/plants")
-        }, 1000)
+          // Redirect after a short delay
+          setTimeout(() => {
+            router.push("/plants")
+          }, 1000)
+        }
+
+        if (isMounted) {
+          setPlant(fetchedPlant) // Set the plant state
+        }
       }
-
-      setPlant(fetchedPlant) // Set the plant state
     }
 
+    fetchPlant()
+
     setIsLoading(false) // Set loading to false after attempting to fetch
+
+    return () => {
+      isMounted = false // Set the flag to false when the component unmounts
+    }
   }, [params.id, getPlant, router, toast])
 
   // Handle plant not found
@@ -126,9 +138,9 @@ export default function PlantPage({ params }: { params: { id: string } }) {
   }
 
   // Handle add activity
-  const handleAddActivity = () => {
+  const handleAddActivity = (type = "watering") => {
     setSelectedActivity({
-      type: "watering",
+      type: type,
       plant: params.id,
       date: new Date(),
     })
@@ -136,7 +148,14 @@ export default function PlantPage({ params }: { params: { id: string } }) {
   }
 
   const handleActivitySave = (data: ActivityData) => {
-    // The actual saving is handled in the ActivityDialog component
+    // Now we need to save the activity here since we've prevented the dialog from doing it
+    addActivity({
+      type: data.type,
+      plant: data.plant,
+      date: data.date,
+      notes: data.notes || "",
+    })
+
     toast({
       title: "Activity added",
       description: `${data.type.charAt(0).toUpperCase() + data.type.slice(1)} activity has been added.`,
@@ -267,15 +286,19 @@ export default function PlantPage({ params }: { params: { id: string } }) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3">
-              <Button variant="outline" className="w-full justify-start" onClick={handleAddActivity}>
+              <Button variant="outline" className="w-full justify-start" onClick={() => handleAddActivity("watering")}>
                 <Droplets className="mr-2 h-4 w-4" />
                 Log Watering
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handleAddActivity}>
+              <Button variant="outline" className="w-full justify-start" onClick={() => handleAddActivity("pruning")}>
                 <Seedling className="mr-2 h-4 w-4" />
                 Log Pruning
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handleAddActivity}>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleAddActivity("harvesting")}
+              >
                 <Harvest className="mr-2 h-4 w-4" />
                 Log Harvest
               </Button>
@@ -307,7 +330,7 @@ export default function PlantPage({ params }: { params: { id: string } }) {
         <TabsContent value="activities" className="mt-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">Activity History</h3>
-            <Button size="sm" onClick={handleAddActivity}>
+            <Button size="sm" onClick={() => handleAddActivity()}>
               <Plus className="mr-2 h-4 w-4" />
               Add Activity
             </Button>
@@ -319,7 +342,7 @@ export default function PlantPage({ params }: { params: { id: string } }) {
                 <Calendar className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-2" />
                 <h3 className="text-lg font-medium">No Activities Yet</h3>
                 <p className="text-muted-foreground mt-1">Start tracking your gardening activities for this plant.</p>
-                <Button className="mt-4" onClick={handleAddActivity}>
+                <Button className="mt-4" onClick={() => handleAddActivity()}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add First Activity
                 </Button>
